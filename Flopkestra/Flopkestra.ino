@@ -1,22 +1,31 @@
+#include "Music.h"
 #include "Floppy.h"
 
-Floppy *f1;
-Song *song;
+//#include "Songs/hello.flb"
+
+Floppy *f1, *f2;
+Song *song1;
+Instrument **orchestra;
 
 void setup() {
     f1 = new Floppy(3, 4, 5);
-    song = new Song(NULL, false);
+    f2 = new Floppy(7, 8, 9);
+    orchestra = (Instrument**) malloc(2 * sizeof(Instrument*));
+    orchestra[0] = f1;
+    orchestra[1] = f2;
+
+    //song1 = new Song(hello);
 }
 
 void loop() {
 
-    /*
-    for (int i = 0; i < 6 * 12; i++) {
-        f1->playTone(NOTES[i], 500);
-    }
-    */
+    //playSong(orchestra, song);
 
-    f1->playTrack(song->tracks[0]);
-
+    //f1->playTrack(song1->tracks[0]);
     delay(2000);
+}
+
+// TODO
+void playSong(Instrument **instruments, Song *song) {
+
 }

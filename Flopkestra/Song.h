@@ -14,7 +14,7 @@ public:
 
 class Song {
 public:
-    Song(char *filename, bool binary);
+    Song(byte *songName);
     int numTracks;
     Track **tracks;
 };

@@ -11,7 +11,6 @@ public:
     void playTrack(Track *track) {
         for (int i = 0; i < track->length; i++) {
             playTone(track->notes[i], track->durations[i]);
-            delay(track->durations[i] / 2);
         }
     };
 };

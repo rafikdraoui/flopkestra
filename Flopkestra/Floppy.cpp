@@ -7,13 +7,13 @@
  */
 
 
-Floppy::Floppy(byte driveselectpin, byte steppin, byte dirpin) {
-    driveSelectPin = driveselectpin;
-    dirPin = dirpin;
-    stepPin = steppin;
+Floppy::Floppy(byte drvs, byte step, byte dir) {
+    driveSelectPin = drvs;
+    stepPin = step;
+    dirPin = dir;
     pinMode(driveSelectPin, OUTPUT);
-    pinMode(dirPin, OUTPUT);
     pinMode(stepPin, OUTPUT);
+    pinMode(dirPin, OUTPUT);
 }
 
 void Floppy::playTone(float freq, int duration) {

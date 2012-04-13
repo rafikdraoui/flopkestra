@@ -1,48 +1,44 @@
 #include "Song.h"
 
+#define getNextByte(song) pgm_read_byte(song + songIndex++)
+
+
 Track::Track(int l, float *n, int *d) {
     length = l;
     notes = n;
     durations = d;
 }
 
-//TODO
-Song::Song(char *filename, bool binary) {
+/* songName is the name of a byte array in PROGMEM containing the bytecode
+   for the song */
+Song::Song(byte *songName) {
 
-    if (filename == NULL) {
-        /*
-        length = 12;
-        notes = (float*) malloc(sizeof(float) * length);
-        durations = (int*) malloc(sizeof(int) * length);
-        float tmpnotes[] = {261.63, 277.18, 293.66, 311.13, 329.63, 349.23,
-                            369.99, 392.00, 415.30, 440.00, 466.16, 493.88};
+    int songIndex = 0;
+    int songLength, trackLength;
 
-        for (int i = 0; i < length; i++) {
-            notes[i] = tmpnotes[i];
-            durations[i] = 500;
+    int numTracks, note, duration;
+    float *notes;
+    int *durations;
+
+    songLength = getNextByte(songName);
+    songLength = (songLength << 8) + getNextByte(songName);
+    numTracks = getNextByte(songName);
+    tracks = (Track**) malloc(numTracks * sizeof(Track*));
+    for (int i = 0; i < numTracks; i++) {
+        trackLength = getNextByte(songName);
+        trackLength = (trackLength << 8) + getNextByte(songName);
+
+        notes = (float*) malloc(trackLength * sizeof(float));
+        durations = (int*) malloc(trackLength * sizeof(int));
+        for (int j = 0; j < trackLength; j++) {
+            note = getNextByte(songName);
+            duration = getNextByte(songName);
+            duration = (duration << 8) + getNextByte(songName);
+
+            notes[j] = MIDI_TO_FREQ[note];
+            durations[j] = duration;
         }
-        */
-
-        numTracks = 1;
-        int length = 26;
-        float *notes = (float*) malloc(length * sizeof(float));
-        int *durations = (int*) malloc(length * sizeof(int));
-        int midinotes[] = {
-            64, 62, 60, 62, 64, 64, 64, 62, 62, 62, 64, 67, 67, 64, 62,
-            60, 62, 64, 64, 64, 64, 62, 62, 64, 62, 60
-        };
-        int times[] = {
-            231, 231, 231, 231, 231, 231, 462,
-            231, 231, 462, 231, 231, 462,
-            231, 231, 231, 231, 231, 231,
-            231, 231, 231, 231, 231, 231, 974
-        };
-        for (int i = 0; i < length; i++) {
-            notes[i] = MIDI_TO_FREQ[midinotes[i]];
-            durations[i] = times[i];
-        }
-
-        tracks = (Track**) malloc(numTracks * sizeof(Track*));
-        tracks[0] = new Track(length, notes, durations);
+        tracks[i] = new Track(trackLength, notes, durations);
     }
 }
+

@@ -5,11 +5,11 @@
 
 class Floppy : public Instrument {
 public:
-    Floppy(byte driveSelectPin, byte dirPin, byte stepPin);
+    Floppy(byte driveSelectPin, byte stepPin, byte dirPin);
     virtual void playTone(float frequency, int duration);
 
 private:
-    byte driveSelectPin, dirPin, stepPin;
+    byte driveSelectPin, stepPin, dirPin;
 };
 
 #endif
