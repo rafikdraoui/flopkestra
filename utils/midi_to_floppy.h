@@ -7,6 +7,11 @@
 #include <string.h>
 
 
+/*** GLOBAL VARIABLES ***/
+uint8_t runningStatus;
+uint8_t channels[16];
+
+
 /*** DATA STRUCTURES ***/
 
 typedef enum {NOTE_ON, NOTE_OFF, END_OF_TRACK, UNSUPPORTED} eventKind;
@@ -36,16 +41,17 @@ typedef struct MIDI {
 
 /*** FUNCTION PROTOTYPES ***/
 
-MIDI *readMidi(void);
-TRACK *readTrack(void);
-EVENT *readEvent(void);
-EVENT *readMetaEvent(int tick, int head);
-EVENT *readSysExEvent(int tick);
-int readVarLen(void);
+MIDI *readMidi(FILE *midifile);
+TRACK *readTrack(FILE *midifile);
+EVENT *readEvent(FILE *midifile);
+EVENT *readMetaEvent(FILE *midifile, int tick, uint8_t head);
+EVENT *readSysExEvent(FILE *midifile, int tick);
+int readVarLen(FILE *midifile);
 MIDI *splitByChannels(MIDI *input);
 TRACK *gatherTrack(MIDI *input, int oldChannel, int newChannel);
 void absoluteTimesInTicks(MIDI *input);
-void writeFloppySong(MIDI *midi, int binary, char *outfile);
+void writeFloppySong(MIDI *midi, char *outfile);
+void FLPtoFLB(char *infile, int songLength, uint16_t *trackLengths);
 void handleError(char *msg);
 
 

@@ -2,97 +2,48 @@
 
 #define MS_PER_TICK 1   //FIXME
 
-
-/*** GLOBAL VARIABLES ***/
-FILE *midifile;
-int runningStatus;
-int channels[16];
+//if defined, do not remove intermediary .flp file
+//#define DEBUG_FLB
 
 
 int main(int argc, char *argv[]) {
 
-    int binary_opt;
-    char *infile, *outfile;
-
-    if (argc < 2 || argc > 3) {
-        printf("Usage: %s [-b] midifile\n", argv[0]);
+    if (argc != 2) {
+        printf("Usage: %s midifile\n", argv[0]);
         exit(1);
     }
 
-    if (argc == 3 && strncmp(argv[1], "-b", 2) == 0) {
-        binary_opt = 1;
-        infile = argv[2];
-    }
-    else {
-        binary_opt = 0;
-        infile = argv[1];
-    }
-
-    if ((midifile = fopen(infile, "rb")) == NULL) {
+    char *infile = argv[1];
+    FILE *fp;
+    if ((fp = fopen(infile, "rb")) == NULL) {
         printf("Error opening MIDI file: %s\n", infile);
         exit(1);
     }
 
-    MIDI *midi = readMidi();
+    MIDI *midi = readMidi(fp);
+    fclose(fp);
+
     midi = splitByChannels(midi);
     absoluteTimesInTicks(midi);
 
-    // create output file name (file.mid --> file.fl{b,p})
-    outfile = (char*) malloc(strlen(infile) + 5);
-    outfile = strdup(infile);
-    char *c = strchr(outfile, '.');
-    if (c == NULL)
-        strcat(outfile, (binary_opt ? ".flb" : ".flp"));
+    // get song name
+    char *title;
+    char *basename = strrchr(infile, '/');
+    if (basename != NULL)
+        title = strdup(basename + 1);
     else
-        strcpy(c, (binary_opt ? ".flb" : ".flp"));
+        title = strdup(infile);
+    char *c = strrchr(title, '.');
+    if (c != NULL) *c = '\0';
 
-    writeFloppySong(midi, binary_opt, outfile);
+    writeFloppySong(midi, title);
 
-    fclose(midifile);
     return 0;
 }
 
 
-//TODO: handle binary format
-void writeFloppySong(MIDI *midi, int binary_opt, char *outfile) {
-    int i, state, note, time_on, duration;
-    EVENT *event;
-    FILE *fp = fopen(outfile, "w");
-    fprintf(fp, "FLOP %d\n", midi->ntrks);
-
-    for (i = 0; i < midi->ntrks; i++) {
-        fprintf(fp, "INSTRUMENT %d\n", i);
-        event = midi->tracks[i]->events;
-        state = 0;
-        note = -1;
-        while (event->kind != END_OF_TRACK) {
-            if (state == 0) {   // no note in progess
-                if (event->kind == NOTE_ON) {
-                    state = 1;
-                    note = event->note;
-                    time_on = event->tick;
-                }
-            }
-            else {  // a note is in progress
-                if (event->kind == NOTE_OFF && event->note == note) {
-                    duration = (event->tick - time_on) * MS_PER_TICK;
-                    fprintf(fp, "%d %d\n", note, duration);
-                    state = 0;
-                    note = -1;
-                } //TODO: do not drop other notes
-            }
-            event = event->next;
-        }
-        fprintf(fp, "END %d\n", i);
-    }
-    fclose(fp);
-}
-
-
-
-MIDI *readMidi(void) {
+MIDI *readMidi(FILE *midifile) {
     int i;
-    char c;
 
     MIDI *midi = (MIDI*) malloc(sizeof(MIDI));
     for (i = 0; i < 16; i++)
@@ -104,9 +55,9 @@ MIDI *readMidi(void) {
         handleError("Input file is not a MIDI file");
     }
 
-    int length = getc(midifile);
+    int header_length = getc(midifile);
     for (i = 0; i < 3; i++) {
-        length = (length << 8) + getc(midifile);
+        header_length = (header_length << 8) + getc(midifile);
     }
 
     midi->format = getc(midifile);
@@ -115,19 +66,19 @@ MIDI *readMidi(void) {
     midi->ntrks = getc(midifile);
     midi->ntrks = (midi->ntrks << 8) + getc(midifile);
 
-    c = getc(midifile);
+    char c = getc(midifile);
     if ( c & 0x8 ) {
         handleError("Time-code based division is not supported");
     }
     midi->division = (c << 8) + getc(midifile);
 
     // Ignore the rest of the header
-    i = length - 6;
+    i = header_length - 6;
     while (i--) getc(midifile);
 
     midi->tracks = (TRACK**) malloc(sizeof(TRACK*) * midi->ntrks);
     for (i = 0; i < midi->ntrks; i++) {
-        midi->tracks[i] = readTrack();
+        midi->tracks[i] = readTrack(midifile);
     }
 
     memcpy(midi->channels, channels, 16);
@@ -135,7 +86,7 @@ MIDI *readMidi(void) {
 }
 
 
-TRACK *readTrack(void) {
+TRACK *readTrack(FILE *midifile) {
     runningStatus = 0;
     TRACK *track = (TRACK*) malloc(sizeof(TRACK));
 
@@ -152,13 +103,13 @@ TRACK *readTrack(void) {
 
     EVENT *firstEvent;
     do {
-        firstEvent = readEvent();
+        firstEvent = readEvent(midifile);
     } while (firstEvent->kind == UNSUPPORTED);
 
     EVENT *nextEvent,  *currentEvent = firstEvent;
     while(currentEvent->kind != END_OF_TRACK) {
         do {
-            nextEvent = readEvent();
+            nextEvent = readEvent(midifile);
         } while (nextEvent->kind == UNSUPPORTED);
 
         currentEvent->next = nextEvent;
@@ -169,19 +120,19 @@ TRACK *readTrack(void) {
 }
 
 
-EVENT *readEvent(void) {
+EVENT *readEvent(FILE *midifile) {
     EVENT *event;
-    int tick = readVarLen();
-    int cmd, channel, data1;
-    int head = getc(midifile);
+    int tick = readVarLen(midifile);
+    uint8_t cmd, channel, data1;
+    uint8_t head = getc(midifile);
     char *errorMessage;
 
     if (head == 0xF0 || head == 0xF7) { // system exclusive event
         runningStatus = 0;
-        event = readSysExEvent(tick);
+        event = readSysExEvent(midifile, tick);
     }
     else if (head >= 0xF8) { // meta-event a.k.a. system real-time event
-        event = readMetaEvent(tick, head);
+        event = readMetaEvent(midifile, tick, head);
     }
     else {
         if (head >= 0x80) { // status byte
@@ -233,10 +184,10 @@ EVENT *readEvent(void) {
 }
 
 
-EVENT *readMetaEvent(int tick, int head) {
+EVENT *readMetaEvent(FILE *midifile, int tick, uint8_t head) {
     EVENT *event = (EVENT*) malloc(sizeof(EVENT));
-    int type = getc(midifile);
-    int i, length = readVarLen();
+    uint8_t type = getc(midifile);
+    int i, length = readVarLen(midifile);
     for (i = 0; i < length; i++)
         getc(midifile);
     if (head == 0xFF && type == 0x2F)
@@ -248,9 +199,9 @@ EVENT *readMetaEvent(int tick, int head) {
 }
 
 
-EVENT *readSysExEvent(int tick) {
+EVENT *readSysExEvent(FILE *midifile, int tick) {
     EVENT *event = (EVENT*) malloc(sizeof(EVENT));
-    int i, length = readVarLen();
+    int i, length = readVarLen(midifile);
     for (i = 0; i < length; i++)
         getc(midifile);
     event->tick = tick;
@@ -259,7 +210,7 @@ EVENT *readSysExEvent(int tick) {
 }
 
 
-int readVarLen(void) {
+int readVarLen(FILE *midifile) {
     int value = 0;
     char c;
     if ( (value = getc(midifile)) & 0x80 ) {
@@ -275,11 +226,11 @@ int readVarLen(void) {
 MIDI *splitByChannels(MIDI *input) {
 
     int i, j = 0, numChannels = 0;
-    int channels[16];
+    uint8_t realChannels[16];
     for (i = 0; i < 16; i++) {
         if (input->channels[i]) {
             numChannels++;
-            channels[j++] = i;
+            realChannels[j++] = i;
         }
     }
 
@@ -292,7 +243,7 @@ MIDI *splitByChannels(MIDI *input) {
 
     output->tracks = (TRACK**) malloc(sizeof(TRACK*) * numChannels);
     for (i = 0; i < numChannels; i++) {
-        output->tracks[i] = gatherTrack(input, channels[i], i);
+        output->tracks[i] = gatherTrack(input, realChannels[i], i);
     }
 
     return output;
@@ -357,7 +308,136 @@ void absoluteTimesInTicks(MIDI *midi) {
 }
 
 
+void writeFloppySong(MIDI *midi, char *title) {
+    int i, state, note;
+    int time_on, duration;
+    uint16_t trackLength, songLength = 0;
+    uint16_t trackLengths[midi->ntrks];
+
+    char *tmpFileName = (char*) malloc(strlen(title) + 5);
+    strcpy(tmpFileName, title);
+    strcat(tmpFileName, ".flp");
+    FILE *tmp;
+    if ((tmp = fopen(tmpFileName, "w+")) == NULL)
+        handleError("Cannot create output .flp file");
+
+    fprintf(tmp, "TRACKS: %d\n", midi->ntrks);
+
+    EVENT *event;
+    for (i = 0; i < midi->ntrks; i++) {
+        trackLength = 0;
+        fprintf(tmp, "INSTRUMENT %d\n", i);
+        event = midi->tracks[i]->events;
+        state = 0;
+        note = -1;
+        time_on = 0;
+        while (event->kind != END_OF_TRACK) {
+            if (state == 0) {   // no note in progess
+                if (event->kind == NOTE_ON) {
+                    duration = (event->tick - time_on) * MS_PER_TICK;
+                    if (duration > 0) {
+                        // silence (that has just been ended by NOTE_ON)
+                        fprintf(tmp, "0 %d\n", duration);
+                        trackLength++;
+                    }
+
+                    state = 1;
+                    note = event->note;
+                    time_on = event->tick;
+                }
+            }
+            else {  // a note is in progress
+                if (event->kind == NOTE_OFF && event->note == note) {
+                    duration = (event->tick - time_on) * MS_PER_TICK;
+                    fprintf(tmp, "%d %d\n", note, duration);
+                    trackLength++;
+                    state = 0;
+                    note = -1;
+                    time_on = event->tick;  // beginning of silence
+                }
+                //TODO: do not drop other notes
+            }
+            event = event->next;
+        }
+        songLength += trackLength;
+        fprintf(tmp, "END %d (LENGTH %d)\n", i, trackLength);
+        trackLengths[i] = (uint16_t) trackLength;
+    }
+    fclose(tmp);
+
+    FLPtoFLB(tmpFileName, songLength, trackLengths);
+}
+
+
+/*
+ * FLB = song_length numtracks (TRACK)+
+ * TRACK = track_length (TONE)+
+ * TONE = note duration
+ *
+ * song_length, track_length and duration are 2 bytes long,
+ * numtracks and note are 1 byte long.
+ */
+#define APPEND(byte) (songArray[arrayIndex++] = (uint8_t) (byte))
+void FLPtoFLB(char *infile, int songLength, uint16_t *trackLengths) {
+
+    int i, j, dummy;
+    int ntrks, bnote, bduration;
+    int arrayLength, arrayIndex = 0;
+
+    FILE *in;
+    if ((in = fopen(infile, "r")) == NULL)
+        handleError("Cannot open flp file");
+
+    fscanf(in, "TRACKS: %d\n", &ntrks);
+    arrayLength = (songLength * 3) + (2 * ntrks) + 3;
+
+    uint8_t songArray[arrayLength];
+
+    APPEND(arrayLength >> 8);
+    APPEND(arrayLength);
+    APPEND(ntrks);
+
+    for (i = 0; i < ntrks; i++) {
+        fscanf(in, "INSTRUMENT %d\n", &dummy);
+        APPEND(trackLengths[i] >> 8);
+        APPEND(trackLengths[i]);
+        for (j = 0; j < trackLengths[i]; j++) {
+            fscanf(in, "%d %d\n", &bnote, &bduration);
+            APPEND(bnote);
+            APPEND(bduration >> 8);
+            APPEND(bduration);
+        }
+        fscanf(in, "END %d (LENGTH %d)\n", &dummy, &dummy);
+    }
+    fclose(in);
+
+    char *outfile = strdup(infile);
+    char *arrayName = strdup(infile);
+    outfile[strlen(infile)-1] = 'b';
+    arrayName[strlen(infile)-4] = '\0';
+
+    FILE *out;
+    if ((out = fopen(outfile, "w")) == NULL)
+        handleError("Cannot create flb file");
+
+    fprintf(out, "byte %s[] PROGMEM = {\n", arrayName);
+    for (i = 0; i < arrayLength; i++) {
+        fprintf(out, "%d", songArray[i]);
+        //fprintf(out, "0x%X", songArray[i]);
+        if (i < (arrayLength - 1))
+            fprintf(out, ", ");
+    }
+    fprintf(out, "\n};\n");
+    fclose(out);
+
+    #ifndef DEBUG_FLB
+    remove(infile);
+    #endif
+}
+
+
 void handleError(char *msg) {
     fprintf(stderr, "ERROR: %s\n", msg);
     exit(1);
 }
+
