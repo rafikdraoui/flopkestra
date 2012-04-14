@@ -1,8 +1,7 @@
 #include "midi_to_floppy.h"
 
-#define MS_PER_TICK 1   //FIXME
 
-//if defined, do not remove intermediary .flp file
+/* if defined, do not remove intermediary .flp file */
 //#define DEBUG_FLB
 
 

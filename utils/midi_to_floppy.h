@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#define MS_PER_TICK 1   //FIXME
 
 /*** GLOBAL VARIABLES ***/
 uint8_t runningStatus;

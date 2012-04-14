@@ -3,10 +3,10 @@
 
 #include "Instrument.h"
 
-class HardDrive {
+class HardDrive : public Instrument {
 public:
     HardDrive(byte inputPin);
-    void playTone(float frequency, uint duration);
+    virtual void playTone(float frequency, uint duration);
 
 private:
     byte inputPin;

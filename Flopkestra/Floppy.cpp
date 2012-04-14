@@ -22,10 +22,10 @@ void Floppy::playTone(float freq, uint duration) {
         return;
     }
 
-    //Delay (in µs) = (1 / freq / 2) * 1000000 µs/s
-    long del = 500000 / freq;
-
     digitalWrite(driveSelectPin, LOW);
+
+    // Delay (in µs) = (1 / freq / 2) * 1000000 µs/s
+    long del = 500000 / freq;
     long now = millis();
     while (millis() - now < duration) {
         digitalWrite(dirPin, LOW);
@@ -40,6 +40,7 @@ void Floppy::playTone(float freq, uint duration) {
         digitalWrite(stepPin, HIGH);
         delayMicroseconds(del);
     }
+
     digitalWrite(driveSelectPin, LOW);
 }
 

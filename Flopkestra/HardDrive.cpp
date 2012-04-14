@@ -7,12 +7,23 @@
 
 HardDrive::HardDrive(byte inputpin) {
     inputPin = inputpin;
+    pinMode(inputPin, OUTPUT);
 }
 
-/* Note: using `tone' means that only one hard drive instrument can be
-   used at a time. */
 void HardDrive::playTone(float freq, uint duration) {
-    // TODO: Write own tone function ?
-    tone(inputPin, freq, duration);
+    if (freq == 0) {
+        delay(duration);
+        return;
+    }
+
+    // Delay (in µs) = (1 / freq) * 1000000 µs/s
+    long del = 1000000 / freq;
+    long now = millis();
+    while (millis() - now < duration) {
+        digitalWrite(inputPin, HIGH);
+        delayMicroseconds(del);
+        digitalWrite(inputPin, LOW);
+        delayMicroseconds(del);
+    }
 }
 
