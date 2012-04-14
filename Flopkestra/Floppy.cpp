@@ -16,7 +16,7 @@ Floppy::Floppy(byte drvs, byte step, byte dir) {
     pinMode(dirPin, OUTPUT);
 }
 
-void Floppy::playTone(float freq, int duration) {
+void Floppy::playTone(float freq, uint duration) {
     if (freq == 0) {
         delay(duration);
         return;

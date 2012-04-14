@@ -3,7 +3,7 @@
 #define getNextByte(song) pgm_read_byte(song + songIndex++)
 
 
-Track::Track(int l, float *n, int *d) {
+Track::Track(int l, float *n, uint *d) {
     length = l;
     notes = n;
     durations = d;
@@ -11,14 +11,15 @@ Track::Track(int l, float *n, int *d) {
 
 /* songName is the name of a byte array in PROGMEM containing the bytecode
    for the song */
-Song::Song(byte *songName) {
+Song::Song(const byte *songName) {
 
     int songIndex = 0;
     int songLength, trackLength;
 
-    int numTracks, note, duration;
+    int numTracks, note;
+    uint duration;
     float *notes;
-    int *durations;
+    uint *durations;
 
     songLength = getNextByte(songName);
     songLength = (songLength << 8) + getNextByte(songName);
@@ -29,7 +30,7 @@ Song::Song(byte *songName) {
         trackLength = (trackLength << 8) + getNextByte(songName);
 
         notes = (float*) malloc(trackLength * sizeof(float));
-        durations = (int*) malloc(trackLength * sizeof(int));
+        durations = (uint*) malloc(trackLength * sizeof(uint));
         for (int j = 0; j < trackLength; j++) {
             note = getNextByte(songName);
             duration = getNextByte(songName);

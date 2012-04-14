@@ -11,7 +11,7 @@ HardDrive::HardDrive(byte inputpin) {
 
 /* Note: using `tone' means that only one hard drive instrument can be
    used at a time. */
-void HardDrive::playTone(float freq, int duration) {
+void HardDrive::playTone(float freq, uint duration) {
     // TODO: Write own tone function ?
     tone(inputPin, freq, duration);
 }

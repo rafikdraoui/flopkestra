@@ -420,7 +420,7 @@ void FLPtoFLB(char *infile, int songLength, uint16_t *trackLengths) {
     if ((out = fopen(outfile, "w")) == NULL)
         handleError("Cannot create flb file");
 
-    fprintf(out, "byte %s[] PROGMEM = {\n", arrayName);
+    fprintf(out, "const byte %s[] PROGMEM = {\n", arrayName);
     for (i = 0; i < arrayLength; i++) {
         fprintf(out, "%d", songArray[i]);
         //fprintf(out, "0x%X", songArray[i]);

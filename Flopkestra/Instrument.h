@@ -6,7 +6,7 @@
 
 class Instrument {
 public:
-    virtual void playTone(float frequency, int duration) = 0;
+    virtual void playTone(float frequency, uint duration) = 0;
 
     void playTrack(Track *track) {
         for (int i = 0; i < track->length; i++) {

@@ -6,7 +6,7 @@
 class HardDrive {
 public:
     HardDrive(byte inputPin);
-    void playTone(float frequency, int duration);
+    void playTone(float frequency, uint duration);
 
 private:
     byte inputPin;

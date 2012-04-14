@@ -6,7 +6,7 @@
 class Floppy : public Instrument {
 public:
     Floppy(byte driveSelectPin, byte stepPin, byte dirPin);
-    virtual void playTone(float frequency, int duration);
+    virtual void playTone(float frequency, uint duration);
 
 private:
     byte driveSelectPin, stepPin, dirPin;
