@@ -41,6 +41,6 @@ void Floppy::playTone(float freq, uint duration) {
         delayMicroseconds(del);
     }
 
-    digitalWrite(driveSelectPin, LOW);
+    digitalWrite(driveSelectPin, HIGH);
 }
 
