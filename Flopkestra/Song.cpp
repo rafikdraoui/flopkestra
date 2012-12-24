@@ -2,10 +2,12 @@
 
 #define getNextByte(song) pgm_read_byte(song + songIndex++)
 
+int songIndex = 0;
+
 int getNextWord(const byte *songName) {
-    int word = getNextByte(song);
-    word = (word << 8) + getNextByte(song);
-    return word
+    int word = getNextByte(songName);
+    word = (word << 8) + getNextByte(songName);
+    return word;
 }
 
 Track::Track(int l, float *n, uint *d) {
@@ -18,7 +20,6 @@ Track::Track(int l, float *n, uint *d) {
    for the song */
 Song::Song(const byte *songName) {
 
-    int songIndex = 0;
     int songLength, trackLength;
 
     int numTracks, note;
