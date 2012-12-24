@@ -43,4 +43,3 @@ void Floppy::playTone(float freq, uint duration) {
 
     digitalWrite(driveSelectPin, HIGH);
 }
-

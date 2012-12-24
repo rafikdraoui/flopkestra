@@ -421,8 +421,7 @@ void FLPtoFLB(char *infile, int songLength, uint16_t *trackLengths) {
 
     fprintf(out, "const byte %s[] PROGMEM = {\n", arrayName);
     for (i = 0; i < arrayLength; i++) {
-        fprintf(out, "%d", songArray[i]);
-        //fprintf(out, "0x%X", songArray[i]);
+        fprintf(out, "0x%X", songArray[i]);
         if (i < (arrayLength - 1))
             fprintf(out, ", ");
     }
@@ -439,4 +438,3 @@ void handleError(char *msg) {
     fprintf(stderr, "ERROR: %s\n", msg);
     exit(1);
 }
-

@@ -26,4 +26,3 @@ void HardDrive::playTone(float freq, uint duration) {
         delayMicroseconds(del);
     }
 }
-

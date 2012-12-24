@@ -2,7 +2,7 @@
 #include "Floppy.h"
 #include "HardDrive.h"
 
-//#include "Songs/hello.flb"
+#include "Songs/hello.flb"
 
 Floppy *f1, *f2;
 HardDrive *hd1;
@@ -18,19 +18,17 @@ void setup() {
     orchestra[1] = f2;
     orchestra[2] = hd1;
 
-    //song1 = new Song(hello);
+    song1 = new Song(hello);
 }
 
 void loop() {
-
     //playSong(orchestra, song);
-
     f1->playTrack(song1->tracks[0]);
     //hd1->playTrack(song1->tracks[0]);
     delay(2000);
 }
 
-// TODO
+//TODO
 void playSong(Instrument **instruments, Song *song) {
 
 }

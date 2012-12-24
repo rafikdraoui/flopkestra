@@ -2,6 +2,11 @@
 
 #define getNextByte(song) pgm_read_byte(song + songIndex++)
 
+int getNextWord(const byte *songName) {
+    int word = getNextByte(song);
+    word = (word << 8) + getNextByte(song);
+    return word
+}
 
 Track::Track(int l, float *n, uint *d) {
     length = l;
@@ -21,20 +26,16 @@ Song::Song(const byte *songName) {
     float *notes;
     uint *durations;
 
-    songLength = getNextByte(songName);
-    songLength = (songLength << 8) + getNextByte(songName);
+    songLength = getNextWord(songName);
     numTracks = getNextByte(songName);
     tracks = (Track**) malloc(numTracks * sizeof(Track*));
     for (int i = 0; i < numTracks; i++) {
-        trackLength = getNextByte(songName);
-        trackLength = (trackLength << 8) + getNextByte(songName);
-
+        trackLength = getNextWord(songName);
         notes = (float*) malloc(trackLength * sizeof(float));
         durations = (uint*) malloc(trackLength * sizeof(uint));
         for (int j = 0; j < trackLength; j++) {
             note = getNextByte(songName);
-            duration = getNextByte(songName);
-            duration = (duration << 8) + getNextByte(songName);
+            duration = getNextWord(songName);
 
             notes[j] = MIDI_TO_FREQ[note];
             durations[j] = duration;
@@ -42,4 +43,3 @@ Song::Song(const byte *songName) {
         tracks[i] = new Track(trackLength, notes, durations);
     }
 }
-
